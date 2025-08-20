@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>FixieRun - Move to Earn</title>
+    
+    <!-- PWA Configuration -->
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiRml4aWVSdW4iLCJzaG9ydF9uYW1lIjoiRml4aWVSdW4iLCJzdGFydF91cmwiOiIvIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzE4MTgxOCIsInRoZW1lX2NvbG9yIjoiIzVENUNERSIsImljb25zIjpbeyJzcmMiOiJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUIzYVdSMGFEMGlNalEwSWlCb1pXbG5hSFE5SWpJME5DSWdlRzFzYm5NOUltaDBkSEE2THk5M2QzY3Vkek11YjNKbkx6SXdNREF2YzNabklpQjJhV1YzUW05NFBTSXdJREFnTWpRMElESTBOQ0krUEhCaGRHZ2dabWxzYkQwaWl6VkVOVU5FUlNJZ1pEMGlUVEV5TUNBME1FTXhNVEkwTnpBNE1EQXRNVEkwTkRReE5qUXRNVEl3SURZd1EyeDNNVEl3TFRZd0xUVXdSVEV5TUNBME1FcHVkekkySWo0OEwzQmhkR2crUEM5emRtYysiLCJzaXplcyI6IjE5Mng5MiIsInR5cGUiOiJpbWFnZS9zdmcreG1sIn1dfQ==" />
+    <meta name="theme-color" content="#5D5CDE">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="FixieRun">
+    
+    <!-- Performance & Security -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- CSS Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- GPS Map - Leaflet (lighter than Google Maps) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        // 🎯 MOBILE-OPTIMIZED TAILWIND CONFIG
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                        'primary-dark': '#4B4BC8',
+                        'bg-light': '#FFFFFF',
+                        'bg-dark': '#181818',
+                        'card-light': '#F8F9FA',
+                        'card-dark': '#262626',
+                        'success': '#10B981',
+                        'warning': '#F59E0B',
+                        'error': '#EF4444',
+                    },
+                    fontFamily: {
+                        sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
+                    },
+                    animation: {
+                        'spin-slow': 'spin 3s linear infinite',
+                        'pulse-soft': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-gentle': 'bounce 2s infinite',
+                        'slide-up': 'slideUp 0.3s ease-out',
+                        'fade-in': 'fadeIn 0.5s ease-out',
+                    }
+                }
+            },
+            darkMode: 'class'
+        }
+    </script>
+
+    <style>
+        /* 📱 MOBILE-FIRST STYLES */
+        .glassmorphism {
+            backdrop-filter: blur(16px) saturate(180%);
+            background-color: rgba(255, 255, 255, 0.75);
+            border: 1px solid rgba(209, 213, 219, 0.3);
+        }
+        
+        .dark .glassmorphism {
+            background-color: rgba(38, 38, 38, 0.75);
+            border: 1px solid rgba(75, 85, 99, 0.3);
+        }
+
+        .gradient-primary {
+            background: linear-gradient(135deg, #5D5CDE 0%, #4B4BC8 100%);
+        }
+        
+        .gradient-cycling {
+            background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        }
+
+        /* 📱 Mobile-optimized inputs */
+        .input-focus {
+            font-size: 16px !important; /* Prevent zoom on iOS */
+            -webkit-appearance: none;
+        }
+
+        /* 🏃‍♂️ Workout Mode - Full Screen */
+        .workout-mode {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            z-index: 9999 !important;
+            background: #000 !important;
+            color: white !important;
+        }
+
+        .workout-mode .workout-metrics {
+            font-size: 2.5rem !important;
+            font-weight: 900 !important;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5) !important;
+        }
+
+        .workout-mode .workout-secondary {
+            font-size: 1.5rem !important;
+            font-weight: 700 !important;
+        }
+
+        /* 🗺️ GPS Map optimized */
+        .gps-map {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        /* 📱 iOS Safe Areas */
+        .safe-top {
+            padding-top: env(safe-area-inset-top);
+        }
+        
+        .safe-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* 🔋 Performance optimizations */
+        .gpu-accelerated {
+            transform: translateZ(0);
+            will-change: transform;
+        }
+
+        /* 📍 GPS Status Indicators */
+        .gps-active {
+            background: linear-gradient(45deg, #10B981, #059669);
+            animation: pulse 2s infinite;
+        }
+
+        .gps-searching {
+            background: linear-gradient(45deg, #F59E0B, #D97706);
+            animation: pulse 1s infinite;
+        }
+
+        .gps-error {
+            background: linear-gradient(45deg, #EF4444, #DC2626);
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 🌙 Dark mode optimizations */
+        @media (prefers-color-scheme: dark) {
+            .leaflet-container {
+                filter: brightness(0.8) contrast(1.1);
+            }
+        }
+
+        /* 🔊 Vibration feedback */
+        .haptic-feedback:active {
+            transform: scale(0.95);
+            transition: transform 0.1s ease;
+        }
+    </style>
+</head>
+<body class="h-full bg-bg-light dark:bg-bg-dark text-gray-900 dark:text-white transition-colors duration-300 safe-top safe-bottom">
+    
+    <!-- 📱 Mobile App Container -->
+    <div id="app" class="min-h-screen flex flex-col">
+        
+        <!-- 📍 GPS Status Bar -->
+        <div id="gpsStatusBar" class="fixed top-0 left-0 right-0 z-50 safe-top">
+            <div id="gpsIndicator" class="text-center py-2 text-white text-sm font-medium gps-searching">
+                <i class="fas fa-satellite-dish mr-2"></i>
+                <span id="gpsStatusText">Localisation en cours...</span>
+            </div>
+        </div>
+
+        <!-- 📱 Main Header -->
+        <header class="glassmorphism fixed top-0 left-0 right-0 z-40 safe-top" style="margin-top: 40px;">
+            <div class="flex items-center justify-between px-4 py-3">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center">
+                        <i class="fas fa-bicycle text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold">FixieRun</h1>
+                        <div class="text-xs text-green-500 font-medium">Move to Earn</div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <div id="connectionStatus" class="flex items-center space-x-1">
+                        <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span class="text-xs font-medium">Online</span>
+                    </div>
+                    <button id="walletBtn" class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-medium transition-all hover:bg-primary-dark haptic-feedback">
+                        Connect
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 🏃‍♂️ Main Content -->
+        <main class="flex-1 px-4 py-6 space-y-6 max-w-full mx-auto" style="margin-top: 120px; margin-bottom: 100px;">
+            
+            <!-- 👋 User Greeting -->
+            <div class="glassmorphism rounded-2xl p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold">Salut ! 👋</h2>
+                        <p class="text-primary font-semibold">Prêt pour un workout ?</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-bold text-green-500">0.00</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">$FIXIE earned</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 📊 Today's Stats -->
+            <div class="glassmorphism rounded-2xl p-6">
+                <h3 class="text-lg font-bold mb-4">Aujourd'hui</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                        <div class="text-2xl font-bold text-blue-600" id="todayDistance">0.0</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">Distance (km)</div>
+                    </div>
+                    <div class="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
+                        <div class="text-2xl font-bold text-green-600" id="todayDuration">0:00</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">Durée</div>
+                    </div>
+                    <div class="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
+                        <div class="text-2xl font-bold text-red-600" id="todayCalories">0</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">Calories</div>
+                    </div>
+                    <div class="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                        <div class="text-2xl font-bold text-purple-600" id="todayTokens">0.00</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">Tokens</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🗺️ GPS Tracking Section -->
+            <div class="glassmorphism rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold">📍 Tracking GPS</h3>
+                    <div id="gpsAccuracy" class="text-xs text-gray-500">
+                        <i class="fas fa-crosshairs mr-1"></i>
+                        <span>En attente...</span>
+                    </div>
+                </div>
+                
+                <!-- Real-time GPS Map -->
+                <div id="gpsMapContainer" class="w-full h-64 bg-gray-200 dark:bg-gray-700 rounded-xl mb-4 gps-map relative overflow-hidden">
+                    <div id="mapPlaceholder" class="w-full h-full flex items-center justify-center">
+                        <div class="text-center">
+                            <div class="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+                            <p class="text-gray-500 text-sm">Initialisation GPS...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Live Workout Metrics -->
+                <div class="grid grid-cols-3 gap-4 text-center mb-4">
+                    <div>
+                        <div id="currentSpeed" class="text-2xl font-bold text-primary">0.0</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">Vitesse (km/h)</div>
+                    </div>
+                    <div>
+                        <div id="currentDistance" class="text-2xl font-bold text-green-500">0.00</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">Distance (km)</div>
+                    </div>
+                    <div>
+                        <div id="workoutTime" class="text-2xl font-bold text-blue-500">00:00</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">Temps</div>
+                    </div>
+                </div>
+                
+                <!-- Start/Stop Button -->
+                <button id="startWorkoutBtn" class="w-full py-4 gradient-primary text-white rounded-xl font-bold text-lg transition-all hover:scale-105 haptic-feedback">
+                    🏃‍♂️ DÉMARRER WORKOUT
+                </button>
+            </div>
+
+            <!-- 🎯 Quick Goals -->
+            <div class="glassmorphism rounded-2xl p-6">
+                <h3 class="text-lg font-bold mb-4">🎯 Objectifs Rapides</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                        <span class="font-medium">🚶‍♂️ Marche 2km</span>
+                        <span class="text-green-500 font-bold">+5 FIXIE</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                        <span class="font-medium">🚴‍♂️ Vélo 10km</span>
+                        <span class="text-green-500 font-bold">+25 FIXIE</span>
+                    </div>
+                    <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl">
+                        <span class="font-medium">🏃‍♂️ Course 5km</span>
+                        <span class="text-green-500 font-bold">+50 FIXIE</span>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- 📱 Bottom Navigation -->
+        <nav class="fixed bottom-0 left-0 right-0 glassmorphism border-t border-gray-200 dark:border-gray-700 safe-bottom">
+            <div class="grid grid-cols-4 py-2">
+                <button class="nav-btn flex flex-col items-center py-3 text-primary haptic-feedback" data-view="home">
+                    <i class="fas fa-home text-lg mb-1"></i>
+                    <span class="text-xs font-medium">Accueil</span>
+                </button>
+                <button class="nav-btn flex flex-col items-center py-3 text-gray-500 haptic-feedback" data-view="stats">
+                    <i class="fas fa-chart-line text-lg mb-1"></i>
+                    <span class="text-xs font-medium">Stats</span>
+                </button>
+                <button class="nav-btn flex flex-col items-center py-3 text-gray-500 haptic-feedback" data-view="rewards">
+                    <i class="fas fa-coins text-lg mb-1"></i>
+                    <span class="text-xs font-medium">Rewards</span>
+                </button>
+                <button class="nav-btn flex flex-col items-center py-3 text-gray-500 haptic-feedback" data-view="profile">
+                    <i class="fas fa-user text-lg mb-1"></i>
+                    <span class="text-xs font-medium">Profil</span>
+                </button>
+            </div>
+        </nav>
+
+    </div>
+
+    <!-- 🔔 Notifications -->
+    <div id="notification" class="hidden fixed top-24 left-4 right-4 glassmorphism rounded-lg p-4 z-50 slide-up">
+        <div class="flex items-center space-x-3">
+            <div id="notificationIcon" class="w-6 h-6 rounded-full flex items-center justify-center">
+                <i class="fas fa-check text-white text-xs"></i>
+            </div>
+            <div class="flex-1">
+                <p id="notificationTitle" class="text-sm font-medium"></p>
+                <p id="notificationMessage" class="text-xs text-gray-600 dark:text-gray-400"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🏃‍♂️ Fullscreen Workout Mode -->
+    <div id="workoutMode" class="hidden workout-mode">
+        <div class="flex flex-col h-full justify-center items-center p-8 text-center">
+            
+            <!-- Workout Header -->
+            <div class="mb-8">
+                <h1 class="text-2xl font-bold mb-2">🏃‍♂️ WORKOUT EN COURS</h1>
+                <div id="workoutTimer" class="text-4xl font-mono font-black workout-metrics">00:00:00</div>
+            </div>
+
+            <!-- Main Metrics -->
+            <div class="grid grid-cols-2 gap-8 w-full max-w-md mb-8">
+                <div class="text-center">
+                    <div id="workoutSpeedLive" class="workout-metrics">0.0</div>
+                    <div class="workout-secondary">km/h</div>
+                </div>
+                <div class="text-center">
+                    <div id="workoutDistanceLive" class="workout-metrics">0.00</div>
+                    <div class="workout-secondary">km</div>
+                </div>
+            </div>
+
+            <!-- GPS Map in Workout Mode -->
+            <div id="workoutMapContainer" class="w-full h-48 bg-gray-800 rounded-2xl mb-8 overflow-hidden">
+                <div class="w-full h-full flex items-center justify-center">
+                    <div class="text-white/60">🗺️ Carte GPS</div>
+                </div>
+            </div>
+
+            <!-- Control Buttons -->
+            <div class="flex space-x-4 w-full max-w-md">
+                <button id="pauseWorkoutBtn" class="flex-1 py-4 bg-yellow-500 text-black rounded-xl font-bold haptic-feedback">
+                    ⏸️ PAUSE
+                </button>
+                <button id="stopWorkoutBtn" class="flex-1 py-4 bg-red-500 text-white rounded-xl font-bold haptic-feedback">
+                    ⏹️ STOP
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🚀 MOBILE-OPTIMIZED FIXIERUN APP WITH REAL GPS
+        class MobileFixieRunApp {
+            constructor() {
+                this.state = {
+                    workoutActive: false,
+                    gpsEnabled: false,
+                    currentPosition: null,
+                    workoutData: {
+                        startTime: null,
+                        duration: 0,
+                        distance: 0,
+                        speed: 0,
+                        maxSpeed: 0,
+                        coordinates: []
+                    }
+                };
+                
+                this.watchId = null;
+                this.workoutInterval = null;
+                this.map = null;
+                this.marker = null;
+                this.path = null;
+                this.wakeLock = null;
+                
+                this.init();
+            }
+
+            async init() {
+                this.setupTheme();
+                this.setupEventListeners();
+                this.updateConnectionStatus();
+                
+                // 🎯 PRIORITY: Try real GPS first
+                await this.initializeRealGPS();
+            }
+
+            async initializeRealGPS() {
+                console.log('📍 Initializing REAL GPS system...');
+                
+                try {
+                    // 1. Check GPS availability
+                    if (!navigator.geolocation) {
+                        throw new Error('GPS not supported on this device');
+                    }
+
+                    // 2. Update status
+                    this.updateGPSStatus('searching', 'Recherche GPS...');
+
+                    // 3. Request permission & get position
+                    const position = await this.getCurrentPosition();
+                    
+                    console.log('✅ REAL GPS initialized:', position.coords);
+                    
+                    // 4. Setup successful
+                    this.state.gpsEnabled = true;
+                    this.state.currentPosition = position.coords;
+                    
+                    this.updateGPSStatus('active', `GPS actif - Précision: ${Math.round(position.coords.accuracy)}m`);
+                    this.initializeMap(position.coords.latitude, position.coords.longitude);
+                    
+                    // 5. Start real-time tracking
+                    this.startGPSTracking();
+                    
+                } catch (error) {
+                    console.error('❌ Real GPS failed:', error);
+                    this.handleGPSError(error);
+                }
+            }
+
+            getCurrentPosition() {
+                return new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(
+                        resolve,
+                        reject,
+                        {
+                            enableHighAccuracy: true,    // High accuracy GPS
+                            timeout: 15000,             // 15 seconds timeout
+                            maximumAge: 30000           // 30 seconds cache
+                        }
+                    );
+                });
+            }
+
+            startGPSTracking() {
+                console.log('📡 Starting real-time GPS tracking...');
+                
+                this.watchId = navigator.geolocation.watchPosition(
+                    (position) => {
+                        this.handleGPSUpdate(position);
+                    },
+                    (error) => {
+                        this.handleGPSError(error);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 5000
+                    }
+                );
+            }
+
+            handleGPSUpdate(position) {
+                const coords = position.coords;
+                console.log('📍 GPS Update:', {
+                    lat: coords.latitude,
+                    lng: coords.longitude,
+                    accuracy: coords.accuracy,
+                    speed: coords.speed
+                });
+
+                // Update current position
+                this.state.currentPosition = coords;
+                
+                // Update accuracy display
+                document.getElementById('gpsAccuracy').innerHTML = `
+                    <i class="fas fa-crosshairs mr-1"></i>
+                    <span>±${Math.round(coords.accuracy)}m</span>
+                `;
+
+                // Update map
+                if (this.map && this.marker) {
+                    const newPos = [coords.latitude, coords.longitude];
+                    this.marker.setLatLng(newPos);
+                    this.map.setView(newPos);
+                }
+
+                // If workout is active, process movement
+                if (this.state.workoutActive) {
+                    this.processWorkoutMovement(coords);
+                }
+
+                // Update speed display
+                if (coords.speed !== null && coords.speed >= 0) {
+                    const speedKmh = coords.speed * 3.6; // m/s to km/h
+                    document.getElementById('currentSpeed').textContent = speedKmh.toFixed(1);
+                }
+            }
+
+            processWorkoutMovement(coords) {
+                const lastCoord = this.state.workoutData.coordinates[this.state.workoutData.coordinates.length - 1];
+                
+                if (lastCoord) {
+                    const distance = this.calculateDistance(
+                        lastCoord.latitude, lastCoord.longitude,
+                        coords.latitude, coords.longitude
+                    );
+                    
+                    // Only add distance if movement > 5 meters (filter GPS noise)
+                    if (distance > 5) {
+                        this.state.workoutData.distance += distance / 1000; // Convert to km
+                        this.state.workoutData.coordinates.push({
+                            latitude: coords.latitude,
+                            longitude: coords.longitude,
+                            timestamp: Date.now(),
+                            accuracy: coords.accuracy
+                        });
+
+                        // Update workout path on map
+                        if (this.path) {
+                            this.path.addLatLng([coords.latitude, coords.longitude]);
+                        }
+
+                        // Calculate real-time speed
+                        const timeDiff = (Date.now() - lastCoord.timestamp) / 1000;
+                        if (timeDiff > 0) {
+                            const speedKmh = (distance / timeDiff) * 3.6;
+                            if (speedKmh > 0 && speedKmh < 200) { // Reasonable speed range
+                                this.state.workoutData.speed = speedKmh;
+                                if (speedKmh > this.state.workoutData.maxSpeed) {
+                                    this.state.workoutData.maxSpeed = speedKmh;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // First coordinate
+                    this.state.workoutData.coordinates.push({
+                        latitude: coords.latitude,
+                        longitude: coords.longitude,
+                        timestamp: Date.now(),
+                        accuracy: coords.accuracy
+                    });
+                }
+            }
+
+            calculateDistance(lat1, lon1, lat2, lon2) {
+                const R = 6371000; // Earth's radius in meters
+                const φ1 = lat1 * Math.PI / 180;
+                const φ2 = lat2 * Math.PI / 180;
+                const Δφ = (lat2 - lat1) * Math.PI / 180;
+                const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                        Math.cos(φ1) * Math.cos(φ2) *
+                        Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+                return R * c;
+            }
+
+            handleGPSError(error) {
+                console.error('❌ GPS Error:', error);
+                
+                let message = 'Erreur GPS';
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        message = 'GPS refusé - Activez la géolocalisation';
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        message = 'Signal GPS indisponible';
+                        break;
+                    case error.TIMEOUT:
+                        message = 'Timeout GPS - Signal faible';
+                        break;
+                }
+                
+                this.updateGPSStatus('error', message);
+                this.state.gpsEnabled = false;
+            }
+
+            updateGPSStatus(status, message) {
+                const indicator = document.getElementById('gpsIndicator');
+                const statusText = document.getElementById('gpsStatusText');
+                
+                indicator.className = `text-center py-2 text-white text-sm font-medium gps-${status}`;
+                statusText.textContent = message;
+            }
+
+            async initializeMap(lat, lng) {
+                try {
+                    console.log('🗺️ Initializing map at:', lat, lng);
+                    
+                    const mapContainer = document.getElementById('gpsMapContainer');
+                    mapContainer.innerHTML = ''; // Clear placeholder
+                    
+                    // Create Leaflet map
+                    this.map = L.map(mapContainer, {
+                        center: [lat, lng],
+                        zoom: 16,
+                        zoomControl: false,
+                        attributionControl: false
+                    });
+
+                    // Add tile layer
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: false
+                    }).addTo(this.map);
+
+                    // Add user marker
+                    this.marker = L.marker([lat, lng]).addTo(this.map);
+                    
+                    // Prepare workout path
+                    this.path = L.polyline([], {
+                        color: '#5D5CDE',
+                        weight: 4,
+                        opacity: 0.8
+                    }).addTo(this.map);
+
+                    console.log('✅ Map initialized successfully');
+                    
+                } catch (error) {
+                    console.error('❌ Map initialization failed:', error);
+                }
+            }
+
+            async startWorkout() {
+                if (!this.state.gpsEnabled) {
+                    this.showNotification('error', 'GPS Requis', 'Veuillez activer le GPS pour commencer');
+                    return;
+                }
+
+                console.log('🏃‍♂️ Starting workout...');
+                
+                this.state.workoutActive = true;
+                this.state.workoutData = {
+                    startTime: Date.now(),
+                    duration: 0,
+                    distance: 0,
+                    speed: 0,
+                    maxSpeed: 0,
+                    coordinates: []
+                };
+
+                // Request wake lock
+                await this.requestWakeLock();
+                
+                // Enter fullscreen workout mode
+                this.enterWorkoutMode();
+                
+                // Start workout timer
+                this.startWorkoutTimer();
+                
+                // Vibrate feedback
+                this.vibrate([200, 100, 200]);
+                
+                this.showNotification('success', 'Workout Démarré!', 'GPS tracking activé - Restez en sécurité!');
+            }
+
+            async requestWakeLock() {
+                try {
+                    if ('wakeLock' in navigator) {
+                        this.wakeLock = await navigator.wakeLock.request('screen');
+                        console.log('🔒 Screen wake lock activated');
+                    }
+                } catch (error) {
+                    console.log('Wake lock failed:', error);
+                }
+            }
+
+            enterWorkoutMode() {
+                document.getElementById('workoutMode').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                
+                // Initialize workout map
+                setTimeout(() => {
+                    this.initializeWorkoutMap();
+                }, 500);
+            }
+
+            initializeWorkoutMap() {
+                const workoutMapContainer = document.getElementById('workoutMapContainer');
+                if (!this.state.currentPosition || !workoutMapContainer) return;
+
+                try {
+                    workoutMapContainer.innerHTML = '';
+                    
+                    this.workoutMap = L.map(workoutMapContainer, {
+                        center: [this.state.currentPosition.latitude, this.state.currentPosition.longitude],
+                        zoom: 18,
+                        zoomControl: false,
+                        attributionControl: false
+                    });
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.workoutMap);
+                    
+                    this.workoutMarker = L.marker([this.state.currentPosition.latitude, this.state.currentPosition.longitude]).addTo(this.workoutMap);
+                    this.workoutPath = L.polyline([], { color: '#10B981', weight: 6 }).addTo(this.workoutMap);
+                    
+                } catch (error) {
+                    console.error('Workout map error:', error);
+                }
+            }
+
+            startWorkoutTimer() {
+                this.workoutInterval = setInterval(() => {
+                    if (!this.state.workoutActive) return;
+                    
+                    this.state.workoutData.duration = Math.floor((Date.now() - this.state.workoutData.startTime) / 1000);
+                    this.updateWorkoutUI();
+                }, 1000);
+            }
+
+            updateWorkoutUI() {
+                const duration = this.state.workoutData.duration;
+                const hours = Math.floor(duration / 3600);
+                const minutes = Math.floor((duration % 3600) / 60);
+                const seconds = duration % 60;
+                
+                document.getElementById('workoutTimer').textContent = 
+                    `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+                
+                document.getElementById('workoutSpeedLive').textContent = this.state.workoutData.speed.toFixed(1);
+                document.getElementById('workoutDistanceLive').textContent = this.state.workoutData.distance.toFixed(2);
+                
+                // Update main display
+                document.getElementById('currentDistance').textContent = this.state.workoutData.distance.toFixed(2);
+                document.getElementById('workoutTime').textContent = `${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+            }
+
+            stopWorkout() {
+                console.log('⏹️ Stopping workout...');
+                
+                this.state.workoutActive = false;
+                clearInterval(this.workoutInterval);
+                
+                // Release wake lock
+                if (this.wakeLock) {
+                    this.wakeLock.release();
+                    this.wakeLock = null;
+                }
+                
+                // Exit workout mode
+                this.exitWorkoutMode();
+                
+                // Show summary
+                this.showWorkoutSummary();
+                
+                this.vibrate([100, 50, 100]);
+            }
+
+            exitWorkoutMode() {
+                document.getElementById('workoutMode').classList.add('hidden');
+                document.body.style.overflow = '';
+                
+                if (this.workoutMap) {
+                    this.workoutMap.remove();
+                    this.workoutMap = null;
+                }
+            }
+
+            showWorkoutSummary() {
+                const { duration, distance, maxSpeed } = this.state.workoutData;
+                const avgSpeed = duration > 0 ? (distance / (duration / 3600)) : 0;
+                const calories = Math.floor(duration / 60 * 8); // Rough estimate
+                const tokens = (distance * 0.5 + duration * 0.001).toFixed(3);
+                
+                const summary = `
+🎉 Workout Terminé!
+
+📏 Distance: ${distance.toFixed(2)} km
+⏱️ Durée: ${Math.floor(duration/60)}:${(duration%60).toString().padStart(2,'0')}
+⚡ Vitesse max: ${maxSpeed.toFixed(1)} km/h
+🔥 Calories: ~${calories}
+💰 FIXIE gagnés: ${tokens}
+
+Excellent travail! 💪
+                `;
+                
+                this.showNotification('success', 'Workout Terminé!', summary);
+            }
+
+            setupEventListeners() {
+                // Start workout button
+                document.getElementById('startWorkoutBtn').addEventListener('click', () => {
+                    if (this.state.workoutActive) {
+                        this.stopWorkout();
+                    } else {
+                        this.startWorkout();
+                    }
+                });
+
+                // Workout mode controls
+                document.getElementById('stopWorkoutBtn').addEventListener('click', () => {
+                    this.stopWorkout();
+                });
+
+                document.getElementById('pauseWorkoutBtn').addEventListener('click', () => {
+                    // Toggle pause (to implement)
+                    this.showNotification('info', 'Pause', 'Fonctionnalité à venir...');
+                });
+
+                // Add haptic feedback to all buttons
+                document.querySelectorAll('.haptic-feedback').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.vibrate([50]);
+                    });
+                });
+            }
+
+            setupTheme() {
+                // Auto dark mode
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                }
+                
+                window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+                    if (event.matches) {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+                });
+            }
+
+            updateConnectionStatus() {
+                const status = document.getElementById('connectionStatus');
+                const dot = status.querySelector('.w-2');
+                
+                if (navigator.onLine) {
+                    dot.className = 'w-2 h-2 bg-green-500 rounded-full';
+                    status.querySelector('span').textContent = 'Online';
+                } else {
+                    dot.className = 'w-2 h-2 bg-red-500 rounded-full animate-pulse';
+                    status.querySelector('span').textContent = 'Offline';
+                }
+            }
+
+            showNotification(type, title, message) {
+                const notification = document.getElementById('notification');
+                const icon = document.getElementById('notificationIcon');
+                const titleEl = document.getElementById('notificationTitle');
+                const messageEl = document.getElementById('notificationMessage');
+
+                const colors = {
+                    success: 'bg-green-500',
+                    error: 'bg-red-500',
+                    warning: 'bg-yellow-500',
+                    info: 'bg-blue-500'
+                };
+
+                const icons = {
+                    success: 'fa-check',
+                    error: 'fa-times',
+                    warning: 'fa-exclamation',
+                    info: 'fa-info'
+                };
+
+                icon.className = `w-6 h-6 ${colors[type]} rounded-full flex items-center justify-center`;
+                icon.innerHTML = `<i class="fas ${icons[type]} text-white text-xs"></i>`;
+                titleEl.textContent = title;
+                messageEl.textContent = message;
+
+                notification.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    notification.classList.add('hidden');
+                }, 5000);
+            }
+
+            vibrate(pattern) {
+                if ('vibrate' in navigator) {
+                    navigator.vibrate(pattern);
+                }
+            }
+        }
+
+        // 🚀 Initialize Mobile App
+        document.addEventListener('DOMContentLoaded', () => {
+            window.fixieApp = new MobileFixieRunApp();
+            
+            // Register Service Worker for PWA
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('data:text/javascript,console.log("SW registered")')
+                    .then(() => console.log('✅ PWA ready'))
+                    .catch(() => console.log('❌ SW registration failed'));
+            }
+        });
+    </script>
+</body>
+</html>
